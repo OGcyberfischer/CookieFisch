@@ -1,11 +1,12 @@
+Get-Process msedge | Stop-Process
 # Start Edge with remote debugging port on the remote machine
 Start-Process "msedge.exe" "https://google.com --remote-debugging-port=9222 --remote-allow-origins=*"
 
 # Wait for the browser to start
-Start-Sleep -Seconds 5
+Start-Sleep -Seconds 10
 
 # Read the cookies from the JSON file
-$cookiesPath = "C:\Users\WDAGUtilityAccount\Desktop\newcookies.txt"
+$cookiesPath = "<COOKIE FILE PATH>"
 
 if (Test-Path $cookiesPath) {
     $cookies = Get-Content $cookiesPath | ConvertFrom-Json
